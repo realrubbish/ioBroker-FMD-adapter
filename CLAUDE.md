@@ -110,4 +110,4 @@ openspec/changes/<name>/
    docker exec iobroker-fmd-dev iobroker logs fmd --files=20
    ```
 
-**IMPORTANT:** The `iobroker url` command handles both npm install AND ioBroker internal registration. It installs from the GitHub tarball (latest commit). For hot-reload dev, use `docker-compose.dev.yml`.
+**Important:** The `iobroker url` command installs directly from the GitHub tarball (latest commit). No local build step is needed for this workflow. A local `npm run build` is only required for hot-reload development using `docker-compose.dev.yml`.

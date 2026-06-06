@@ -644,6 +644,26 @@ docker run -p 8081:8081 --name iobroker -h iobroker buanet/iobroker
 - Image enthält seit v5.1.0 einen Docker Health Check
 - Status: `docker inspect iobroker --format='{{.State.Health.Status}}'`
 
+**FMD Adapter von GitHub Branch installieren:**
+```bash
+# Container muss laufen
+docker ps  # iobroker-fmd-dev sollte "healthy" sein
+
+# Adapter von GitHub installieren (Branch statt Commit-Hash verwenden!)
+docker exec iobroker-fmd-dev iobroker url https://github.com/realrubbish/ioBroker-FMD-adapter.git#main
+
+# Adapter-Instanz erstellen
+docker exec iobroker-fmd-dev iobroker add fmd --enabled
+
+# Status prüfen
+docker exec iobroker-fmd-dev iobroker list instances
+
+# Logs prüfen
+docker logs iobroker-fmd-dev --tail 50
+```
+
+**Hinweis:** Commit-Hash-URLs (z.B. `#6ef5709...`) führen zu Fehler "Unknown packet name". Branch-Namen (#main, #develop) funktionieren.
+
 ### 9.9 Architectur (Docker Desktop macOS)
 
 ```
