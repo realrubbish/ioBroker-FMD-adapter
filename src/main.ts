@@ -74,9 +74,11 @@ class FmdAdapter extends utils.Adapter {
         // Subscribe to ring states (see Bug B fix in the parent commit).
         // Without this, setState on 0_userdata.0.FindMyDevice.ring.<id>
         // never reaches onStateChange and the ring is never triggered.
-        const ringPattern = "0_userdata.0.FindMyDevice.ring.**";
-        this.subscribeStates(ringPattern);
-        this.log.info(`[onReady] Subscribed to ring pattern: ${ringPattern}`);
+        // (NB: a follow-up bug — Bug I — exists where the wildcard
+        // subscribe does not fire onStateChange for manually created
+        // user-data states. Tracked in the add-admin-ui-index-html
+        // change's out-of-scope follow-ups.)
+        this.subscribeStates("0_userdata.0.FindMyDevice.ring.*");
 
         this.log.info(`FMD adapter ready. Server: ${config.serverUrl}`);
 
@@ -329,15 +331,9 @@ class FmdAdapter extends utils.Adapter {
      * Called when a subscribed state changes
      */
     private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
-        // TEMP DEBUG: log every state change at info level to diagnose
-        // why 0_userdata.0.FindMyDevice.ring.* is not firing. Will be
-        // reverted to debug once we know what's happening.
-        this.log.info(`[onStateChange] id=${id} val=${state?.val} ack=${state?.ack}`);
+        if (!state || state.ack) return;
 
-        if (!state || state.ack) {
-            this.log.info(`[onStateChange] filtered out (state=${!!state}, ack=${state?.ack})`);
-            return;
-        }
+        this.log.debug(`State change: ${id} = ${state.val}`);
 
         // Handle button trigger. Compare against the configured
         // buttonStateId if set, otherwise fall back to the hardcoded
