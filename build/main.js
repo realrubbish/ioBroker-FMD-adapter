@@ -92,14 +92,20 @@ class FmdAdapter extends utils.Adapter {
         });
         // Subscribe to button state for hardware trigger
         this.subscribeToButtonState();
-        // Subscribe to ring states (see Bug B fix in the parent commit).
-        // Without this, setState on 0_userdata.0.FindMyDevice.ring.<id>
-        // never reaches onStateChange and the ring is never triggered.
-        // (NB: a follow-up bug — Bug I — exists where the wildcard
-        // subscribe does not fire onStateChange for manually created
-        // user-data states. Tracked in the add-admin-ui-index-html
-        // change's out-of-scope follow-ups.)
-        this.subscribeStates("0_userdata.0.FindMyDevice.ring.*");
+        // Subscribe to ring states. We use `subscribeForeignStates`
+        // (not the default `subscribeStates`) because the ring
+        // states live under `0_userdata.0.*`, which is owned by
+        // `admin.0`, not by this adapter. The default
+        // `subscribeStates` is restricted to states owned by the
+        // calling adapter, so it silently filters out the
+        // `0_userdata.0.FindMyDevice.ring.*` pattern and the
+        // callback never fires. `subscribeForeignStates` crosses
+        // the adapter-ownership boundary and is the correct API
+        // for cross-adapter / user-data subscriptions. The
+        // regex filter in onStateChange still restricts dispatch
+        // to ring states. See fix-subscribe-semantics-bug
+        // design.md D2 / spike result 1.5.
+        this.subscribeForeignStates("0_userdata.0.FindMyDevice.ring.*");
         this.log.info(`FMD adapter ready. Server: ${config.serverUrl}`);
         // Run the actual login + device fetch in the background so the
         // adapter reaches "ready" quickly. Before this fix, onReady
