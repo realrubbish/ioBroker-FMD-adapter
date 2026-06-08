@@ -74,7 +74,7 @@ class FmdAdapter extends utils.Adapter {
         // Subscribe to ring states (see Bug B fix in the parent commit).
         // Without this, setState on 0_userdata.0.FindMyDevice.ring.<id>
         // never reaches onStateChange and the ring is never triggered.
-        const ringPattern = "0_userdata.0.FindMyDevice.ring.*";
+        const ringPattern = "0_userdata.0.FindMyDevice.ring.**";
         this.subscribeStates(ringPattern);
         this.log.info(`[onReady] Subscribed to ring pattern: ${ringPattern}`);
 
