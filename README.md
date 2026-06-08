@@ -48,22 +48,46 @@ npm install iobroker.fmd
 | FMD Server URL | Your FMD server URL (e.g., `https://fmd.example.com`) |
 | Username | Your FMD account username |
 | Password | Your FMD account password |
+| Default Ring Device | (Optional) Device ID to ring when the configured button trigger fires. Leave empty to ring only manually. |
+| Button State ID | (Optional) State ID of a Shelly (or other) button whose `triple_push` event triggers a ring. Leave empty to disable the hardware button path. |
 
 ### Admin UI
 
-The adapter uses the modern JSON Config interface (ioBroker Admin 7+):
+The adapter ships its own admin UI built with React + Vite and the
+`@iobroker/json-config` form component. The wrench pop-up on the
+instance row shows three panels:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ FMD Connection                                      │
-│ ├─ Server URL: [https://fmd.example.com        ]   │
-│ ├─ Username:   [admin                        ]   │
-│ └─ Password:   [••••••••••                    ]   │
-│                                                      │
-│ Notifications                                        │
-│ └─ □ Send notification on errors                    │
+│ FMD (Find My Device)                                │
+│                                                     │
+│ ▾ Connection                                        │
+│   ├─ FMD Server URL: [https://fmd.example.com  ]    │
+│   ├─ Username:        [admin                  ]     │
+│   └─ Password:        [••••••••               ]     │
+│                                                     │
+│ ▾ Hardware Button Trigger                           │
+│   ├─ Default Ring Device: [3f6c1b8a           ]     │
+│   ├─ Button State ID:     [shelly.0.…Event    ]     │
+│   └─ Hint: When Button State ID changes to          │
+│      "triple_push", the adapter rings the            │
+│      Default Ring Device.                            │
+│                                                     │
+│ ▾ Connection Status                                 │
+│   ├─ Status:       connected (live)                  │
+│   ├─ Last Error:   —                                 │
+│   └─ [ Test Connection ]                             │
+│                                                     │
+│ ▾ Devices                                           │
+│   ├─ Available Ring States:                          │
+│   │   • my-phone (val=true)                          │
+│   │   • my-tablet (val=false)                        │
 └─────────────────────────────────────────────────────┘
 ```
+
+The Status and Devices panels refresh every 5 seconds. See
+[`docs/admin-ui.md`](docs/admin-ui.md) for the build pipeline,
+architecture, and module-federation contract.
 
 ## Usage
 
@@ -216,29 +240,37 @@ git add <files>
 git commit -m "fix: describe your change"
 git push
 
-# 2. Start the Docker container
+# 2. Build the admin UI (mandatory when src-admin/ or admin/index*.html changed)
+npm run build:admin
+
+# 3. Start the Docker container
 docker compose up -d
 
-# 3. Install adapter from GitHub
+# 4. Install adapter from GitHub
 docker exec iobroker-fmd-dev iobroker url https://github.com/realrubbish/iobroker-fmd
 
-# 4. Fix adapter directory (workaround for ioBroker GitHub adapter issue)
+# 5. Fix adapter directory (workaround for ioBroker GitHub adapter issue)
 docker exec iobroker-fmd-dev bash -c "\
   mkdir -p /opt/iobroker/node_modules/iobroker.iobroker-fmd && \
   cp -r /opt/iobroker/node_modules/iobroker.fmd/* /opt/iobroker/node_modules/iobroker.iobroker-fmd/ && \
   chown -R iobroker:iobroker /opt/iobroker/node_modules/iobroker.iobroker-fmd"
 
-# 5. Upload and register adapter
+# 6. Upload and register adapter
 docker exec iobroker-fmd-dev iobroker upload iobroker-fmd
 
-# 6. Add adapter instance
+# 7. Force io-package.json refresh (mandatory when io-package.json changed)
+docker exec iobroker-fmd-dev touch /opt/iobroker/iobroker-data/files/iobroker-fmd/io-package.json
+
+# 8. Add adapter instance (only on first install or after adapter-name change)
 docker exec iobroker-fmd-dev iobroker add iobroker-fmd
 
-# 7. Verify
+# 9. Verify
 docker exec iobroker-fmd-dev iobroker logs iobroker-fmd --files=20
+# In the browser: hard-reload ioBroker.admin (Cmd/Ctrl+Shift+R) and click
+# the wrench on iobroker-fmd.0 — the new admin/index.html must load.
 ```
 
-**Note:** Step 4 is a workaround for a known ioBroker issue where third-party GitHub adapters are installed with the wrong directory name. Once the adapter is published to npm (planned for v1.0.0), this step will no longer be needed.
+**Note:** Step 5 is a workaround for a known ioBroker issue where third-party GitHub adapters are installed with the wrong directory name. Once the adapter is published to npm (planned for v1.0.0), this step will no longer be needed.
 
 ### Prerequisites
 

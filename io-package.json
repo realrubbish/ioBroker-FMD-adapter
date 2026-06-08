@@ -39,7 +39,9 @@
   "native": {
     "serverUrl": "https://fmd.example.com",
     "username": "",
-    "password": ""
+    "password": "",
+    "ringDeviceId": "",
+    "buttonStateId": ""
   },
   "schema": {
     "type": "object",
@@ -61,6 +63,18 @@
         "title": "Password",
         "description": "FMD server password (stored encrypted)",
         "writeOnly": true
+      },
+      "ringDeviceId": {
+        "type": "string",
+        "title": "Default Ring Device",
+        "description": "Device ID to ring when the configured button trigger fires. Optional — leave empty to ring manually via 0_userdata.0.FindMyDevice.ring.<deviceId>.",
+        "default": ""
+      },
+      "buttonStateId": {
+        "type": "string",
+        "title": "Button State ID",
+        "description": "Shelly (or other) state ID whose value drives the hardware-button trigger. Optional — leave empty to disable the hardware button path.",
+        "default": ""
       }
     },
     "required": ["serverUrl", "username", "password"]

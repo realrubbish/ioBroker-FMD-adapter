@@ -1,0 +1,110 @@
+// jsonConfig schema for the iobroker-fmd admin UI.
+//
+// This is the source of truth. App.tsx imports it as a TypeScript
+// module. The build step also copies the same file to
+// admin/jsonConfig.json5 so the controller can serve it from the
+// standard admin/ static path.
+//
+// Consumed by App.tsx at runtime and passed to the JsonConfig component
+// from @iobroker/json-config. Live values (connectionState, lastError,
+// deviceList) are pushed into `data` by the React app via a 5-second
+// polling loop (see Task 4.3 in add-admin-ui-index-html).
+//
+// Field naming MUST stay in sync with the `io-package.json` `native`
+// keys (serverUrl, username, password, ringDeviceId, buttonStateId)
+// for the standard save path to work.
+{
+  "type": "panel",
+  "label": "FMD (Find My Device)",
+  "items": {
+    "connection": {
+      "type": "panel",
+      "label": "Connection",
+      "items": {
+        "serverUrl": {
+          "type": "text",
+          "label": "FMD Server URL",
+          "placeholder": "https://fmd.example.com",
+          "validator": {
+            "type": "url",
+            "message": "URL must start with https://"
+          }
+        },
+        "username": {
+          "type": "text",
+          "label": "Username"
+        },
+        "password": {
+          "type": "password",
+          "label": "Password",
+          "repeat": false
+        }
+      }
+    },
+    "hardwareTrigger": {
+      "type": "panel",
+      "label": "Hardware Button Trigger",
+      "items": {
+        "ringDeviceId": {
+          "type": "text",
+          "label": "Default Ring Device",
+          "placeholder": "e.g. 3f6c1b8a",
+          "validator": null
+        },
+        "buttonStateId": {
+          "type": "text",
+          "label": "Button State ID",
+          "placeholder": "e.g. shelly.0.shellyplus1pm#abc#1.Input0.Event",
+          "validator": null
+        },
+        "buttonHint": {
+          "type": "staticText",
+          "text": "When Button State ID changes to \"triple_push\", the adapter rings the Default Ring Device. Leave both fields empty to disable the hardware button path. The manual path via 0_userdata.0.FindMyDevice.ring.<deviceId> = true always works."
+        }
+      }
+    },
+    "status": {
+      "type": "panel",
+      "label": "Connection Status",
+      "items": {
+        "connectionState": {
+          "type": "staticText",
+          "label": "Status",
+          "text": "n/a"
+        },
+        "lastError": {
+          "type": "staticText",
+          "label": "Last Error",
+          "text": "n/a"
+        },
+        "testButton": {
+          "type": "sendTo",
+          "label": "Test Connection",
+          "command": "testConnection",
+          "result": {
+            "type": "staticText",
+            "label": "Test Result",
+            "text": "(click Test Connection to run)"
+          }
+        }
+      }
+    },
+    "devices": {
+      "type": "panel",
+      "label": "Devices",
+      "items": {
+        "deviceInfo": {
+          "type": "staticText",
+          "text": "Devices are managed under 0_userdata.0.FindMyDevice. Set 0_userdata.0.FindMyDevice.ring.<deviceId> = true to trigger a ring."
+        },
+        "deviceList": {
+          // Live list rendered by App.tsx. JsonConfig treats string items
+          // as staticText; we update the data via the 5s polling loop.
+          "type": "staticText",
+          "label": "Available Ring States",
+          "text": "(loading…)"
+        }
+      }
+    }
+  }
+}

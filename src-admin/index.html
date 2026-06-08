@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ioBroker-fmd</title>
+    <!--
+      The host ioBroker.admin bundle provides the Socket.IO client as a
+      global script. We load it before our app boots so window.io is
+      available when the JsonConfig component first mounts. If the script
+      fails to load, the app falls back to read-only mode (see socket.ts).
+    -->
+    <!--
+      The host ioBroker.admin bundle provides the Socket.IO client as a
+      global script. We inject it from main.tsx at boot so it loads as a
+      classic script (sets window.io) and is not picked up by Vite's HTML
+      transformer. If the script fails to load, the app falls back to
+      read-only mode (see socket.ts).
+    -->
+  </head>
+  <body>
+    <div id="root" class="fmd-admin-root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

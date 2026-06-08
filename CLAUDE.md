@@ -89,18 +89,29 @@ openspec/changes/<name>/
    git push
    ```
 
-2. **Start/Restart Docker Container**
+2. **Build the Admin UI** (mandatory when `src-admin/`, `admin/jsonConfig.json5`, or `admin/index*.html` changed)
+   ```bash
+   npm run build:admin
+   ```
+   This runs `scripts/build-admin.mjs`, which:
+   - Wipes the build outputs in `admin/` (`index.html`, `index_m.html`, `assets/`)
+   - Invokes Vite to regenerate them from `src-admin/`
+   - Copies the source-of-truth schema `src-admin/schema.json5` to `admin/jsonConfig.json5`
+   - Leaves `admin/settings.json` and `admin/favicon.ico` untouched (they are hand-managed)
+   - Commit the regenerated `admin/` artefacts together with the `src-admin/` source change. The artefacts are required because the Docker dev container does not run a Node toolchain at deploy time.
+
+3. **Start/Restart Docker Container**
    ```bash
    docker compose up -d
    # or: docker compose restart
    ```
 
-3. **Install Adapter from GitHub**
+4. **Install Adapter from GitHub**
    ```bash
    docker exec iobroker-fmd-dev iobroker url https://github.com/realrubbish/iobroker-fmd
    ```
 
-4. **Fix Adapter Directory (Workaround)**
+5. **Fix Adapter Directory (Workaround)**
    ```bash
    docker exec iobroker-fmd-dev bash -c "\
      mkdir -p /opt/iobroker/node_modules/iobroker.iobroker-fmd && \
@@ -108,21 +119,30 @@ openspec/changes/<name>/
      chown -R iobroker:iobroker /opt/iobroker/node_modules/iobroker.iobroker-fmd"
    ```
 
-5. **Upload & Register Adapter**
+6. **Upload & Register Adapter**
    ```bash
    docker exec iobroker-fmd-dev iobroker upload iobroker-fmd
    ```
 
-6. **Add Instance**
+7. **Force io-package.json Refresh** (mandatory when `io-package.json` changed, especially `adminUI` flags)
+   ```bash
+   docker exec iobroker-fmd-dev touch /opt/iobroker/iobroker-data/files/iobroker-fmd/io-package.json
+   ```
+   `iobroker upload` does NOT refresh the controller's cached copy of `io-package.json` on its own. Touching the file forces the controller to re-read it on the next access, which is what makes new `adminUI` flags (or any schema change) actually take effect. Skip this step only if step 6 was the only `io-package.json`-touching change.
+
+8. **Add Instance** (only on first install or after adapter-name change)
    ```bash
    docker exec iobroker-fmd-dev iobroker add iobroker-fmd
    ```
 
-7. **Verify**
+9. **Verify**
    ```bash
    docker exec iobroker-fmd-dev iobroker logs iobroker-fmd --files=20
    ```
+   Then in the browser: hard-reload ioBroker.admin (Cmd/Ctrl+Shift+R), click the wrench on the `iobroker-fmd.0` instance row. The wrench pop-up must load the new `admin/index.html` form, not a 404.
 
 **Note on Directory Workaround:** Due to a known ioBroker issue with third-party GitHub adapters, npm installs as `iobroker.fmd` but ioBroker expects `iobroker.iobroker-fmd`. This workaround creates the correct directory structure.
 
-**Future (v1.0.0):** Once published to npm, only steps 1-3 and 6-7 will be needed.
+**Note on adminUI 404 (the symptom of this change):** ioBroker.admin 7.7.22 (the new React SPA) always loads the wrench pop-up as an iframe pointing at `admin/index.html` (or `admin/index_m.html` for materialize users). If those files are missing, the browser console logs `GET /adapter/iobroker-fmd/index.html?... 404` and the pop-up is empty. The `adminUI.config = "json"` flag does **not** skip the iframe; it only changes the data source for the Instances list and the sidebar adapter tab. See `docs/admin-ui.md` for the full architecture and `docs/admin-ui-investigation-2026-06-08.md` for the diagnostic that led to this change.
+
+**Future (v1.0.0):** Once published to npm, only steps 1-4, 6, 8-9 will be needed (the directory workaround and the io-package.json touch become unnecessary).
