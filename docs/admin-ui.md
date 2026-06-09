@@ -152,3 +152,47 @@ JsonConfig form save path uses those exact names when calling
 
 Adding a new field is a two-file change: add the property to
 `io-package.json`'s `schema.properties` AND to `src-admin/schema.json5`.
+
+## Connection Status panel
+
+The Status panel shows three live values, all driven by the 5-second
+polling loop in `App.tsx`:
+
+- **Status** — derived from `info.connection` (`connected` / `disconnected`
+  / `unknown`).
+- **Last Error** — `info.lastError`, refreshed every 5 s.
+- **Last Test Result** — the formatted reply of the most recent
+  `Test Connection` click. Defaults to `(click Test Connection to run)`
+  and persists across polling cycles until a fresh `info.lastError` is
+  observed (so a stale "OK" line is cleared the moment the live state
+  diverges from it).
+
+### Test Connection button
+
+`App.tsx` renders a real `<button>` below the form (not a
+`type: "sendTo"` schema item). The reason is that `JsonConfig`'s built-in
+`ConfigSendTo` widget surfaces the reply via `window.alert` and exposes
+no callback to push the result into a `staticText` line with our own
+timestamp format. A custom button + a direct `socket.sendTo` call gives
+us full control over placement, copy, and formatting.
+
+The click calls `socket.sendTo('<adapterName>.<instance>', 'testConnection', {})`
+and the adapter's `onMessage.testConnection` handler (in `src/main.ts`)
+replies with one of:
+
+- `{ success: true, message: "Connected successfully" }` — rendered as
+  `OK – connected at HH:MM:SS`.
+- `{ error: "<reason>" }` — rendered as `Failed – <reason> at HH:MM:SS`.
+  The same string is also pushed into `info.lastError` by the handler
+  on its way out, so the live `Last Error` field reflects the same
+  failure within one polling cycle.
+
+The reply contract is owned by the adapter and documented in the
+`admin-ui` capability (see `openspec/specs/admin-ui/spec.md`,
+Requirement "Test Connection button is present"). The
+`add-test-connection-button` change (`openspec/changes/archive/`)
+introduced the button and the `Last Test Result` line.
+
+The button is disabled while a test is in flight and when the host
+admin's `socket.io.js` failed to load (so a click cannot produce a
+silent no-op).
